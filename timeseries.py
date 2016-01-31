@@ -42,6 +42,8 @@ class ArimaTS(TimeSeries):
             self.data.append(yt)
 
     def forecast(self, n=10):
+        if n <= 0:
+            return
         self.forecast_length = n
         for t in range(self.raw_length, self.raw_length+n):
             yt = self.model.mu
@@ -49,7 +51,7 @@ class ArimaTS(TimeSeries):
                 if t >= i:
                     yt -= self.model.phi_list[i]*self.data[t-i]
             for i in range(self.model.q+1):
-                if t >=i and t-i < self.raw_length:
+                if t >= i and t-i < self.raw_length:
                     yt += self.model.theta_list[i]*self.epsilon_list[t-i]
             self.data.append(yt)
 
@@ -129,6 +131,8 @@ class TransferFunctionTS(TimeSeries):
             self.data.append(yt)
 
     def forecast(self, n=10):
+        if n <= 0:
+            return
         self.forecast_length = n
         for i in range(self.model.k):
             x_series = self.x_series_list[i]
@@ -220,15 +224,17 @@ class TcmTS(TimeSeries):
             for i in range(len(beta_list)):
                 if t-i-1 >= 0:
                     yt += beta_list[i]*self.data[t-i-1]
-            for i in range(1, self.k):
+            for i in range(1, self.k+1):
                 beta_list = self.model.beta_list[i]
-                x_series = self.x_series_list[i]
-                for j in range(beta_list):
+                x_series = self.x_series_list[i-1]
+                for j in range(len(beta_list)):
                     if t-j-1 >= 0:
                         yt += beta_list[j]*x_series.data[t-j-1]
             self.data.append(yt)
 
     def forecast(self, n=10):
+        if n <=0:
+            return
         self.forecast_length = n
         for x_series in self.x_series_list:  # forecast the x series first
             x_series.forecast(n=self.current_length()-x_series.current_length())
@@ -238,22 +244,25 @@ class TcmTS(TimeSeries):
             for i in range(len(beta_list)):
                 if t-i-1 >= 0:
                     yt += beta_list[i]*self.data[t-i-1]
-            for beta_list in self.model.beta_list[1:]:
+            for i in range(1, self.k+1):
+                beta_list = self.model.beta_list[i]
+                x_series = self.x_series_list[i-1]
                 for j in range(len(beta_list)):
                     if t-j-1 >= 0:
-                        yt += beta_list[j]*x_series.data[t-j-1]
+                        yt += beta_list[j]*(x_series.data[t-j-1])
             self.data.append(yt)
 
 
 class TcmModel(object):
     """
-    yt = alpha+beta_{0,1}y_{t-1}+beta_{0,2}y_{t-2}+...+beta_{1,1}x_{1,t-1}+beta_{1,2}x_{1,t-2}+...+beta_{2,1}x_{2,t-1}+....+epsilon_t
+    yt = alpha+beta_{0,1}y_{t-1}+beta_{0,2}y_{t-2}+...+beta_{1,1}x_{1,t-1}+beta_{1,2}x_{1,t-2}+...
+         +beta_{2,1}x_{2,t-1}+....+epsilon_t
     epsilon_t ~ N(0, sigma^2)
     """
     def __init__(self, k):
         self.alpha = 0
         self.sigma = 1
-        self.beta_list = [[0] for i in range(k+1)]
+        self.beta_list = [[0]]*(k+1)
 
     def set_alpha(self, alpha):
         self.alpha = alpha
@@ -286,6 +295,6 @@ def main():
     print len(ts.data)
     print len(ts.x_series_list[0].data)
     # print len(ts.n_series.data)
-if __name__=='__main__':
+if __name__ == '__main__':
     print 'test starts'
     main()
