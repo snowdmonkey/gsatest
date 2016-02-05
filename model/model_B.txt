@@ -1,0 +1,17 @@
+Model Term	Coefficient
+Intercept	-14301.92
+Product_B_Revenue	Lag 1	.11
+	Lag 2	.04
+	Lag 3	-.02
+	Lag 4	.01
+	Lag 5	-.03
+Email_Offer	Lag 1	1.02
+	Lag 2	1.45
+	Lag 3	.31
+	Lag 4	.06
+	Lag 5	-.30
+Direct_Mail_Offer	Lag 1	-.08
+	Lag 2	.04
+	Lag 3	-.02
+	Lag 4	.10
+	Lag 5	.20
