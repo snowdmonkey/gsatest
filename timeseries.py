@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def coefficient_product(c1=[1], c2=[1], p1=1, p2=1):
+def coefficient_product(c1=[1.0], c2=[1.0], p1=1, p2=1):
     """
     this function will return the coefficients list of a product of two polynomial
     c1 is the coefficient list of the first polynomial and c2 the second
@@ -9,13 +9,17 @@ def coefficient_product(c1=[1], c2=[1], p1=1, p2=1):
     p1 and p2 is the power of the two polynomials, respectively
     """
     c1_input, c2_input = c1[:], c2[:]
-    while p1 != 1:
+    if p1 == 0:
+        c1 = [1.0]
+    if p2 == 0:
+        c2 = [1.0]
+    while p1 > 1:
         c1 = coefficient_product(c1, c1_input)
         p1 -= 1
-    while p2 != 1:
+    while p2 > 1:
         c2 = coefficient_product(c2, c2_input)
         p2 -= 1
-    c3 = [0]*(len(c1)+len(c2)-1)
+    c3 = [0.0]*(len(c1)+len(c2)-1)
     for i in range(len(c1)):
         for j in range(len(c2)):
             c3[i+j] += c1[i]*c2[j]
@@ -271,21 +275,28 @@ class TransferFunctionTS(TimeSeries):
             x_series = self.x_series_list[i]
             x_series.forecast(n=n+self.raw_length-x_series.current_length())
         self.n_series.forecast(n=n+self.raw_length-self.n_series.current_length())
-        for i in range(self.k):  # generate the k v series
-            transfer_function = self.model.transfer_function_list[i]
-            for t in range(self.raw_length, self.raw_length+n):  # generate  till v_{raw_length+n-1}
-                vt = 0
-                for j in range(1, transfer_function.q+transfer_function.Q*transfer_function.s+1):
-                    if t-j >= 0:
-                        vt -= transfer_function.delta_list[j]*self.v_series_list[i][t-j]
-                for j in range(transfer_function.p+transfer_function.P*transfer_function.s+1):
-                    if t-transfer_function.d-j >= 0:
-                        vt += transfer_function.omega_list[j]*self.x_series_list[i].data[t-transfer_function.d-j]
-                self.v_series_list[i].append(vt)
+        # for i in range(self.k):  # generate the k v series
+        #     transfer_function = self.model.transfer_function_list[i]
+        #     for t in range(self.raw_length, self.raw_length+n):  # generate  till v_{raw_length+n-1}
+        #         vt = 0
+        #         for j in range(1, transfer_function.q+transfer_function.Q*transfer_function.s+1):
+        #             if t-j >= 0:
+        #                 vt -= transfer_function.delta_list[j]*self.v_series_list[i][t-j]
+        #         for j in range(transfer_function.p+transfer_function.P*transfer_function.s+1):
+        #             if t-transfer_function.d-j >= 0:
+        #                 vt += transfer_function.omega_list[j]*self.x_series_list[i].data[t-transfer_function.d-j]
+        #         self.v_series_list[i].append(vt)
+        c1, c2 = [1.0, -1.0], [0.0]*(self.model.s+1)
+        c2[0] = 1.0
+        c2[-1] = -1.0
+        c3 = coefficient_product(c1=c1, c2=c2, p1=self.model.d, p2=self.model.D) # q_t=(1-B)^d(1-B^s)^D y_t
         for t in range(self.raw_length, self.raw_length+n):  # generate the y series
-            yt = self.model.mu + self.n_series.data[t]
+            qt = self.model.mu + self.n_series.data[t]
             for i in range(self.model.k):
-                yt += self.v_series_list[i][t]
+                qt += self.v_series_list[i][t]
+            yt = qt
+            for i in range(1, len(c3)):
+                yt -= c3[i]*self.data[t-i]
             self.data.append(yt)
 
 
@@ -417,8 +428,11 @@ class TcmModel(object):
 
 
 def main():
-   ts = TransferFunctionTS()
-   print coefficient_product(c1=[1, -1], p1=3, c2=[1, 2], p2=20)
+    c1, c2 = [1.0, -1.0], [0.0]*13
+    c2[0] = 1.0
+    c2[-1] = -1.0
+    c3 = coefficient_product(c1=c1, c2=c2, p1=0, p2=1)
+    print c3
 if __name__ == '__main__':
     print 'test starts'
     main()
