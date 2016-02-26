@@ -2,37 +2,17 @@ import cplex
 
 
 c = cplex.Cplex()
-c.variables.add(names=['y'+str(i) for i in range(107, 120)])
-c.variables.add(names=['x0_'+str(i) for i in range(107, 120)])
-c.variables.add(names=['x1_'+str(i) for i in range(107, 120)])
-
-data = range(200)
-
-a = 10000
-
-for i in range(107, 119):  # set the series minimum change objective
-    c.objective.set_quadratic_coefficients('y'+str(i), 'y'+str(i), 2.0/(data[i]**2))
-    c.objective.set_linear('y'+str(i), -2.0/data[i])
-    for j in range(2):
-        c.objective.set_quadratic_coefficients('x'+str(j)+'_'+str(i), 'x'+str(j)+'_'+str(i),
-                                               2.0/(data[i]**2))
-        c.objective.set_linear('x'+str(j)+'_'+str(i), -2.0/data[i])
-
-for i in range(119, 120):  # set match to target objective
-    c.objective.set_quadratic_coefficients('y'+str(i), 'y'+str(i), a**2.0*2/(51000**2))
-    c.objective.set_linear('y'+str(i), -2.0/51000*(a**2))
-
-
-print data[117]
-
-# # c.variables.add(names=['x', 'y'])
-# c.objective.set_quadratic_coefficients('y107', 'y107', 2.0/(117**2))
-# c.objective.set_linear('y107', -2.0/117)
-
+c.variables.add(names=['x', 'y'], lb=[-cplex.infinity]*2)
+c.objective.set_quadratic_coefficients('y', 'y', 2.0)
+c.objective.set_quadratic_coefficients('x', 'y', 2.0)
+c.objective.set_quadratic_coefficients('x', 'x', 2.0)
+# print solution
+# c.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=['x'], val=[1.0])], senses=['E'], rhs=[1.0])
 
 c.solve()
-solution = c.solution.get_values()
-print solution[:13]
-print solution[13:26]
-print solution[26:]
-# print solution
+
+print c.objective.get_quadratic()
+# print c.variables.get_lower_bounds()
+# print c.variables.get_upper_bounds()
+print c.solution.get_values()
+print c.solution.get_objective_value()
